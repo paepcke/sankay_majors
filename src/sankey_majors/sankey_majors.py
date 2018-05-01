@@ -3,11 +3,9 @@ import getpass
 import os
 
 from pymysql_utils.pymysql_utils import MySQLDB
-
 from sankey_diagram import SankeyNode, SankeyLink, SankeyDiagram
+from color_generator import ColorSource
 
-
-#import urllib, json
 class SankeyMajors(object):
     
     # Minimum number of students to have made the transitions 
@@ -20,7 +18,7 @@ class SankeyMajors(object):
     #    >50:  41 pairs
     #    >99:   8 pairs
      
-    MIN_MAJOR_TRANSITIONS = 99
+    MIN_MAJOR_TRANSITIONS = 10
     
     #--------------------------
     # __init__
@@ -41,17 +39,16 @@ class SankeyMajors(object):
                             passwd=self.mysql_passwd, 
                             db=self.majors_table)
         
-        links = self.get_links()
-        nodes = self.get_nodes(links)
+        (nodes, links) = self.get_nodes_and_links()
         SankeyDiagram.plot_sankey(nodes, 
                                   links, 
                                   plot_title="Majors Transitions")
         
     #--------------------------
-    # get_links 
+    # get_nodes_and_links 
     #-------------------
     
-    def get_links(self):
+    def get_nodes_and_links(self):
     
         query = '''SELECT major_left_num, major_right_num, count(*) AS num_transitions
                      FROM majors_transitions
@@ -75,7 +72,33 @@ class SankeyMajors(object):
                              )
                              for one_link_info in link_info
                  ]
-        return(links)
+        
+        nodes = self.get_nodes(links)
+        
+        # Now we need to change the source and target node numbers
+        # in the SankeyLink objects to be indexes into the just
+        # obtained list of SankeyNodes instances. Right now those
+        # source/target numbers are the absolute majors numbers
+        # in the db:
+        
+        for sankey_link_obj in links:
+            src_node_abs_num = sankey_link_obj.src_node_num
+            # Find node obj with the link object's left-major absolute
+            # number. The filter() method returns an array, therefore
+            # the [0] 
+            src_node_obj = filter(lambda sankey_node_obj: sankey_node_obj.num == src_node_abs_num,
+                                  nodes)[0]
+            node_index   = nodes.index(src_node_obj)
+            sankey_link_obj.src_node_num = node_index
+            
+            # Same for target:
+            target_node_abs_num = sankey_link_obj.target_node_num
+            target_node_obj = filter(lambda sankey_node_obj: sankey_node_obj.num == target_node_abs_num,
+                                     nodes)[0]
+            node_index   = nodes.index(target_node_obj)
+            sankey_link_obj.target_node_num = node_index
+            
+        return(nodes, links) 
     
     #--------------------------
     # get_nodes 
@@ -108,23 +131,20 @@ class SankeyMajors(object):
         MAJOR_NAME = 1
         
         node_info = self.mydb.query(query).nextall()
+        
+        color_source = ColorSource(len(node_info))
+        
         # The 'str()' is to get rid of the unicode 'u' prefix:
         nodes = [ SankeyNode(int(one_node_info[MAJOR_NUM]),
                              str(one_node_info[MAJOR_NAME]),
-                             self.get_color(one_node_info[MAJOR_NAME])
+                             color_source.next()
                              )
                              for one_node_info in node_info 
                              ]
+        
         return(nodes)
         
-    
-    #--------------------------
-    # get_color 
-    #-------------------
-    
-    def get_color(self, major_name):
-        return 'blue'
-        
+          
     #--------------------------
     # get MySQLPasswd
     #-------------------

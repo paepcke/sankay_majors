@@ -7,9 +7,9 @@ import json
 
 import plotly
 
-
-# --------------------------- Top Level Diagram Creation (Class Methods) ----------------
 class SankeyDiagram(object):
+    
+    # ======================================= Public Methods =========================    
     
     #--------------------------
     # plot_sankey 
@@ -27,6 +27,62 @@ class SankeyDiagram(object):
                                                     plot_title, 
                                                     font)
         plotly.offline.plot(fig, validate=False) 
+    
+    
+    #--------------------------
+    # import_sankey_json 
+    #-------------------
+        
+    @classmethod
+    def import_sankey_json(cls, fileObjOrJsonStr):
+        
+        # Is it a file-like object?
+        try:
+            json_str = fileObjOrJsonStr.read()
+        except AttributeError:
+            json_str = fileObjOrJsonStr
+        
+        try:
+            sankey_info = json.loads(json_str)
+        except ValueError:
+            raise('Given JSON string cannot be parsed.')
+        
+        try:
+            sankey_data = sankey_info['data'][0]
+        except IndexError:
+            raise("The 'data' key's value from the JSON is not an array as excpected.")
+        
+        
+        # Construct node list:
+        node_labels = sankey_data['node']['label']
+        node_colors = sankey_data['node']['color']
+        node_nums   = range(len(node_labels))
+        nodes = [ SankeyNode(node_info[0],
+                             node_info[1],
+                             node_info[2]
+                             ) 
+                             for node_info in zip(node_nums, node_labels, node_colors) 
+                             ]
+
+        link_sources = sankey_data['link']['source']
+        link_targets = sankey_data['link']['target']
+        link_values  = sankey_data['link']['value']      
+        
+        links = [ SankeyLink(link_info[0],
+                             link_info[1],
+                             link_info[2]
+                             ) 
+                             for link_info in zip(link_sources, link_targets, link_values) 
+                             ]
+        
+        return(nodes, links)    
+
+    
+    # ======================================= Private Methods =========================
+        
+    #--------------------------
+    # construct_plotly_struct 
+    #-------------------
     
     @classmethod
     def construct_plotly_struct(cls, 
@@ -80,50 +136,7 @@ class SankeyDiagram(object):
             data=[plotly_data], 
             layout=layout
             )
-        
-    @classmethod
-    def import_sankey_json(cls, fileObjOrJsonStr):
-        
-        # Is it a file-like object?
-        try:
-            json_str = fileObjOrJsonStr.read()
-        except AttributeError:
-            json_str = fileObjOrJsonStr
-        
-        try:
-            sankey_info = json.loads(json_str)
-        except ValueError:
-            raise('Given JSON string cannot be parsed.')
-        
-        try:
-            sankey_data = sankey_info['data'][0]
-        except IndexError:
-            raise("The 'data' key's value from the JSON is not an array as excpected.")
-        
-        
-        # Construct node list:
-        node_labels = sankey_data['node']['label']
-        node_colors = sankey_data['node']['color']
-        node_nums   = range(len(node_labels))
-        nodes = [ SankeyNode(node_info[0],
-                             node_info[1],
-                             node_info[2]
-                             ) 
-                             for node_info in zip(node_nums, node_labels, node_colors) 
-                             ]
 
-        link_sources = sankey_data['link']['source']
-        link_targets = sankey_data['link']['target']
-        link_values  = sankey_data['link']['value']      
-        
-        links = [ SankeyLink(link_info[0],
-                             link_info[1],
-                             link_info[2]
-                             ) 
-                             for link_info in zip(link_sources, link_targets, link_values) 
-                             ]
-        
-        return(nodes, links)    
 
 # --------------------------- Node Class ----------------
 
@@ -139,6 +152,21 @@ class SankeyNode(object):
         self.num = node_num
         self.label = node_label
         self.color = node_color
+        
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.num == other.num and \
+                   self.label == other.label and \
+                   self.color == other.color
+        else:
+            return False
+        
+    def __ne__(self, other):
+        return (not isinstance(other, self.__class__) or \
+                self.num != other.num or \
+                self.label != other.label or \
+                self.color != other.color
+                )
 
 # --------------------------- Link Class ----------------
         

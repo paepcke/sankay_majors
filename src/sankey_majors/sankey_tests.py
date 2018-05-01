@@ -32,7 +32,8 @@ if __name__ == '__main__':
                      'thickness': 20,
                      'line': {'color': 'black', 'width': 0.5},
                      'label': ['CS-BS', 'ECON-BA', 'ENGL-BA', 'HSTRY-BA', 'INTLR-BA', 'MATH-BS', 'POLSC-BA', 'PSYCH-BA', 'PUBPO-BA'],
-                     'color': ['blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue'],
+                     #*********'color': ['blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue'],
+                     'color': ['rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)','rgb(0.5,0.5,0.5)']
                    },
           'link': {'source': [0, 1, 1, 1, 1, 1, 1, 3],
                    'target': [5, 2, 3, 4, 6, 7, 8, 6],
